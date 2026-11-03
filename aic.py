@@ -21,7 +21,11 @@ MAX_ARTWORK_ID = 290_000
 # image_id — це UUID; інше в URL до музею не підставляємо
 IMAGE_ID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 
-CARD_FIELDS = ["id", "title", "artist_title", "date_display", "image_id", "thumbnail"]
+SEARCH_FIELDS = [
+    "title", "artist_title", "artist_display", "term_titles", "subject_titles",
+    "style_titles", "classification_titles", "place_of_origin", "medium_display",
+]
+CARD_FIELDS =["id", "title", "artist_title", "date_display", "image_id", "thumbnail"]
 DETAIL_FIELDS = CARD_FIELDS + [
     "artist_display", "medium_display", "dimensions", "place_of_origin",
     "department_title", "style_title", "credit_line", "description",
@@ -111,7 +115,12 @@ def search(query="", page=1, public_only=False):
         "page": page,
     }
     if query:
+        # q лише впорядковує за релевантністю, але не відсіює: без must
+        # будь-який запит «знаходить» усю колекцію з нульовою вагою в кінці
         body["q"] = query
+        body["query"]["bool"]["must"] = [{"simple_query_string": {
+            "query": query, "default_operator": "and", "fields": SEARCH_FIELDS,
+        }}]
     data = _request("POST", "/artworks/search", json=body)
     pages = -(-data["pagination"]["total"] // PER_PAGE)
     return data["data"], min(max(1, pages), MAX_PAGE)

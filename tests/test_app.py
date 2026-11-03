@@ -77,6 +77,8 @@ def test_search_sends_query_and_filters(fake_api):
     artworks, pages = aic.search("seurat", page=2, public_only=True)
     body = fake_api[0][2]["json"]
     assert body["q"] == "seurat" and body["page"] == 2
+    # без must API повертає всю колекцію, а не лише збіги
+    assert body["query"]["bool"]["must"][0]["simple_query_string"]["query"] == "seurat"
     assert {"term": {"is_public_domain": True}} in body["query"]["bool"]["filter"]
     assert artworks == [ART] and pages == 3
 

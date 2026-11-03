@@ -29,6 +29,7 @@ A website built with **Python, Flask and Requests** for browsing the collection 
 
 ### Things I learned about this API
 
+- **`q` ranks, but does not filter.** With `q` alone any word "finds" the whole collection: real matches come first, then every other artwork with a score of 0. The app adds a `simple_query_string` in `bool.must` over the key fields (title, artist, subjects, style, medium…), so only real matches are counted, and keeps `q` for the relevance order.
 - **Search stops at 1,000 results.** Asking for `offset + limit > 1000` returns `403 "Invalid number of results"`, so the pager is capped at 83 pages.
 - **That is also why "random" cannot just pick a random page.** Elasticsearch's `random_score` is accepted but has no effect, so the app picks a random `id` and takes the first public-domain artwork at or after it.
 - **The description is HTML.** The app keeps only the text of each paragraph (`Markup.striptags`), so no foreign markup ends up on the page.
