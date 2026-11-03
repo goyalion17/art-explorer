@@ -30,6 +30,13 @@ class FakeResponse:
         return self.data
 
 
+@pytest.fixture(autouse=True)
+def empty_cache():
+    # кеш живе в модулі між тестами — інакше тест отримав би чужу відповідь
+    for func in (aic.search, aic.get_artwork, aic._get_many):
+        func.cache_clear()
+
+
 @pytest.fixture
 def client():
     app.config["TESTING"] = True
@@ -160,3 +167,39 @@ def test_image_proxy_rejects_bad_id(client, monkeypatch):
 def test_pages_use_local_image_urls(client, fake_api):
     html = client.get("/").text
     assert f'src="/image/{ART["image_id"]}"' in html
+
+
+def test_repeated_search_uses_cache(fake_api):
+    aic.search("seurat")
+    aic.search("seurat")
+    aic.search("monet")
+    assert len(fake_api) == 2
+
+
+def test_cache_expires(fake_api, monkeypatch):
+    now = [1000.0]
+    monkeypatch.setattr(aic.time, "monotonic", lambda: now[0])
+    aic.get_artwork(ART["id"])
+    now[0] += 59 * 60
+    aic.get_artwork(ART["id"])
+    assert len(fake_api) == 1
+    now[0] += 2 * 60
+    aic.get_artwork(ART["id"])
+    assert len(fake_api) == 2
+
+
+def test_errors_are_not_cached(client, fake_api, monkeypatch):
+    real = aic.requests.request
+    monkeypatch.setattr(aic.requests, "request", lambda *a, **k: (_ for _ in ()).throw(requests.ConnectionError()))
+    assert client.get("/").status_code == 502
+    monkeypatch.setattr(aic.requests, "request", real)
+    assert client.get("/").status_code == 200
+
+
+def test_cache_drops_oldest_when_full():
+    calls = []
+    cached = aic.ttl_cache(seconds=60, max_size=2)(calls.append)
+    for n in (1, 2, 3, 1):
+        cached(n)
+    # 1 витіснила трійка, тож її довелося рахувати знову
+    assert calls == [1, 2, 3, 1]

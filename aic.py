@@ -1,5 +1,7 @@
+import functools
 import random
 import re
+import time
 
 import requests
 from markupsafe import Markup
@@ -29,6 +31,29 @@ DETAIL_FIELDS = CARD_FIELDS + [
 
 class ApiError(Exception):
     pass
+
+
+def ttl_cache(seconds, max_size=256):
+    """Тримає результат у пам'яті `seconds` секунд. Помилки (винятки) не кешуються."""
+    def decorator(func):
+        cache = {}
+
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            key = (args, tuple(sorted(kwargs.items())))
+            now = time.monotonic()
+            hit = cache.pop(key, None)
+            if hit is None or now - hit[0] >= seconds:
+                hit = (now, func(*args, **kwargs))
+            if len(cache) >= max_size:
+                # dict пам'ятає порядок вставки — викидаємо найдавніший запис
+                cache.pop(next(iter(cache)))
+            cache[key] = hit
+            return hit[1]
+
+        wrapper.cache_clear = cache.clear
+        return wrapper
+    return decorator
 
 
 def image_url(image_id):
@@ -73,6 +98,7 @@ def _filters(public_only):
     return filters
 
 
+@ttl_cache(seconds=5 * 60)
 def search(query="", page=1, public_only=False):
     """Повертає (твори, кількість сторінок). Порожній запит — підбірка музею."""
     filters = _filters(public_only)
@@ -91,14 +117,19 @@ def search(query="", page=1, public_only=False):
     return data["data"], min(max(1, pages), MAX_PAGE)
 
 
+@ttl_cache(seconds=60 * 60)
 def get_artwork(artwork_id):
     data = _request("GET", f"/artworks/{artwork_id}", params={"fields": ",".join(DETAIL_FIELDS)})
     return data["data"] if data else None
 
 
 def get_many(ids):
-    if not ids:
-        return []
+    # список із сесії не може бути ключем кешу, а кортеж може
+    return _get_many(tuple(ids)) if ids else []
+
+
+@ttl_cache(seconds=60 * 60)
+def _get_many(ids):
     data = _request("GET", "/artworks", params={"ids": ",".join(map(str, ids)), "fields": ",".join(CARD_FIELDS)})
     # API не гарантує порядок — повертаємо в тому, в якому їх додали
     by_id = {art["id"]: art for art in data["data"]}

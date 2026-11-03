@@ -13,6 +13,7 @@ A website built with **Python, Flask and Requests** for browsing the collection 
 - **Surprise me**: opens a random public-domain artwork from the whole collection.
 - **Favourites**: save artworks with one click. The list lives in the session cookie, so no account is needed.
 - **Fast loading**: every card shows a tiny blurred preview (`lqip`) from the API while the real image loads, and gallery images use `loading="lazy"`.
+- **Caching**: API responses are kept in memory (searches for 5 minutes, artworks and favourites for an hour), so repeated pages open instantly and the museum gets fewer requests. Images are cached by the browser for a day.
 - **Friendly errors**: if the API is slow or down, or an artwork does not exist, the site shows a clear message instead of a crash.
 - **Works without JavaScript**, adapts to phones, and has an automatic light and dark theme.
 
@@ -41,6 +42,7 @@ A website built with **Python, Flask and Requests** for browsing the collection 
 | **Jinja2** | Template inheritance (`extends`/`block`), a shared card `include`, loops over a list of `(label, field)` pairs for the details table |
 | **Requests** | Calls to the REST API with a `timeout`, a custom header, `params` for GET and `json=` for POST; network errors are turned into one `ApiError` |
 | **Flask `session`** | A signed cookie that stores the list of favourite IDs |
+| **`ttl_cache` decorator** | A small in-memory cache with an expiry time and a size limit, built with `functools.wraps` and `time.monotonic`. Errors are never cached |
 | **pytest** + `monkeypatch` | Tests replace `requests.request` with a fake, so they run offline and check exactly what is sent to the API |
 
 ## Run locally
