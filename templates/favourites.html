@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Favourites · Art Explorer{% endblock %}
+{% block content %}
+<h1 class="section-title">Your favourites</h1>
+{% if artworks %}
+  <div class="grid">
+    {% for art in artworks %}{% include "_card.html" %}{% endfor %}
+  </div>
+{% else %}
+  <p class="empty">No favourites yet. Open any artwork and press “Add to favourites”.</p>
+{% endif %}
+{% endblock %}

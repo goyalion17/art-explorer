@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{% if query %}{{ query }} · {% endif %}Art Explorer{% endblock %}
+{% block content %}
+<section class="hero">
+  <h1>Walk through 130,000 works<br>of the Art Institute of Chicago</h1>
+  <form class="search" action="{{ url_for('index') }}" method="get">
+    <input type="search" name="q" value="{{ query }}" placeholder="Monet, cats, Japanese prints…" aria-label="Search artworks" autofocus>
+    <button type="submit">Search</button>
+    <label class="check"><input type="checkbox" name="public"{% if public_only %} checked{% endif %}> Public domain only</label>
+  </form>
+</section>
+
+<h2 class="section-title">{% if query %}Results for “{{ query }}”{% else %}Museum highlights{% endif %}</h2>
+
+{% if artworks %}
+  <div class="grid">
+    {% for art in artworks %}{% include "_card.html" %}{% endfor %}
+  </div>
+
+  {% if pages > 1 %}
+  {% set params = {"q": query or None, "public": "on" if public_only else None} %}
+  <nav class="pager">
+    {% if page > 1 %}<a href="{{ url_for('index', page=page - 1, **params) }}">← Previous</a>{% else %}<span></span>{% endif %}
+    <span>Page {{ page }} of {{ pages }}</span>
+    {% if page < pages %}<a href="{{ url_for('index', page=page + 1, **params) }}">Next →</a>{% else %}<span></span>{% endif %}
+  </nav>
+  {% endif %}
+{% else %}
+  <p class="empty">Nothing found. Try another word or <a href="{{ url_for('random_artwork') }}">see a random artwork</a>.</p>
+{% endif %}
+{% endblock %}

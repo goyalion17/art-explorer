@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Something went wrong · Art Explorer{% endblock %}
+{% block content %}
+<div class="empty">
+  <h1>Something went wrong</h1>
+  <p>{{ message }}</p>
+  <p><a href="{{ url_for('index') }}">Back to the gallery</a></p>
+</div>
+{% endblock %}

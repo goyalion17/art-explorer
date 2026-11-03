@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ art.title }} · Art Explorer{% endblock %}
+{% block content %}
+<article class="artwork">
+  <figure class="artwork-image"{% if art.thumbnail and art.thumbnail.lqip %} style="background-image: url('{{ art.thumbnail.lqip }}')"{% endif %}>
+    <img src="{{ image_url(art.image_id) }}" alt="{{ (art.thumbnail and art.thumbnail.alt_text) or art.title }}">
+  </figure>
+
+  <div class="artwork-info">
+    <h1>{{ art.title }}</h1>
+    <p class="artist">{{ art.artist_display or "Unknown artist" }}</p>
+
+    <form method="post" action="{{ url_for('toggle_favourite', artwork_id=art.id) }}">
+      <input type="hidden" name="next" value="{{ request.full_path }}">
+      {% if art.id in favourites %}
+        <button class="fav on" type="submit">♥ In favourites</button>
+      {% else %}
+        <button class="fav" type="submit">♡ Add to favourites</button>
+      {% endif %}
+    </form>
+
+    <dl>
+      {% for label, key in [("Date", "date_display"), ("Medium", "medium_display"), ("Dimensions", "dimensions"),
+                            ("Origin", "place_of_origin"), ("Style", "style_title"), ("Type", "classification_title"),
+                            ("Department", "department_title"), ("Credit", "credit_line")] %}
+        {% if art[key] %}<dt>{{ label }}</dt><dd>{{ art[key] }}</dd>{% endif %}
+      {% endfor %}
+      <dt>Rights</dt><dd>{{ "Public domain" if art.is_public_domain else "Copyrighted" }}</dd>
+    </dl>
+
+    {% for paragraph in description %}<p class="description">{{ paragraph }}</p>{% endfor %}
+
+    <p class="links">
+      <a href="{{ museum_url }}" target="_blank" rel="noopener">View on artic.edu ↗</a>
+      <a href="{{ url_for('random_artwork') }}">Another random artwork →</a>
+    </p>
+  </div>
+</article>
+{% endblock %}

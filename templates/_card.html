@@ -1,0 +1,10 @@
+<a class="card" href="{{ url_for('artwork', artwork_id=art.id) }}">
+  <div class="card-image"{% if art.thumbnail and art.thumbnail.lqip %} style="background-image: url('{{ art.thumbnail.lqip }}')"{% endif %}>
+    <img src="{{ image_url(art.image_id) }}" alt="{{ (art.thumbnail and art.thumbnail.alt_text) or art.title }}" loading="lazy">
+  </div>
+  <div class="card-text">
+    <h3>{{ art.title }}</h3>
+    <p>{{ art.artist_title or "Unknown artist" }}{% if art.date_display %} · {{ art.date_display }}{% endif %}</p>
+  </div>
+  {% if art.id in favourites %}<span class="heart" title="In favourites">♥</span>{% endif %}
+</a>
